@@ -1,0 +1,119 @@
+// MODERNI FRONTEND (React) + DASHBOARD
+// Ovo je pojednostavljena ali moderna verzija UI-a
+
+import { useState, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+
+export default function App() {
+  const [tab, setTab] = useState("home");
+  const [messages, setMessages] = useState([]);
+  const [token, setToken] = useState("");
+
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    const form = e.target;
+
+    await fetch("/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.name.value,
+        email: form.email.value,
+        message: form.message.value,
+      }),
+    });
+
+    alert("Poslano!");
+    form.reset();
+  };
+
+  const login = async () => {
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: "admin", password: "123456" }),
+    });
+    const data = await res.json();
+    setToken(data.token);
+  };
+
+  const loadMessages = async () => {
+    const res = await fetch("/messages", {
+      headers: { Authorization: token },
+    });
+    const data = await res.json();
+    setMessages(data);
+  };
+
+  useEffect(() => {
+    if (token) loadMessages();
+  }, [token]);
+
+  return (
+    <div className="min-h-screen bg-yellow-50 p-4">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold text-center mb-4">Moja App</h1>
+
+        <div className="flex gap-2 mb-4">
+          <Button onClick={() => setTab("home")}>Početna</Button>
+          <Button onClick={() => setTab("contact")}>Kontakt</Button>
+          <Button onClick={() => setTab("admin")}>Admin</Button>
+        </div>
+
+        {tab === "home" && (
+          <Card>
+            <CardContent className="p-4 text-center">
+              <h2 className="text-xl">Dobrodošao</h2>
+              <img
+                className="mx-auto mt-4"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://yourdomain.com"
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {tab === "contact" && (
+          <Card>
+            <CardContent className="p-4">
+              <form onSubmit={sendMessage} className="flex flex-col gap-3">
+                <Input name="name" placeholder="Ime" required />
+                <Input name="email" placeholder="Email" required />
+                <Textarea name="message" placeholder="Poruka" required />
+                <Button type="submit">Pošalji</Button>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {tab === "admin" && (
+          <Card>
+            <CardContent className="p-4">
+              {!token ? (
+                <Button onClick={login}>Login kao admin</Button>
+              ) : (
+                <div>
+                  <h2 className="text-xl mb-2">Dashboard</h2>
+                  <p>Ukupno poruka: {messages.length}</p>
+
+                  <div className="mt-4 space-y-2">
+                    {messages.map((m) => (
+                      <Card key={m.id}>
+                        <CardContent className="p-2">
+                          <p className="font-bold">{m.name}</p>
+                          <p>{m.message}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
